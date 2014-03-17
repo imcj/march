@@ -9,6 +9,7 @@ class Request
     public var get:StringMap<String>;
     public var method(get,null):String;
     public var cookie:Cookie;
+    public var session:Session;
 
     public function new()
     {

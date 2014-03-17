@@ -19,7 +19,7 @@ class Handler extends mtwin.web.Handler<Void>
 		}
 	}
 
-	function render(template, context)
+	function render(template, context:Dynamic)
 	{
 		sendNoCacheHeaders();
 		var template = './templates/$template';
