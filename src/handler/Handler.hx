@@ -22,7 +22,7 @@ class Handler extends mtwin.web.Handler<Void>
 	function render(template, context)
 	{
 		sendNoCacheHeaders();
-		var template = 'G:\\march\\templates\\$template';
+		var template = './templates/$template';
 		neko.Lib.print(
 			mustache.Mustache.render(
 				sys.io.File.getContent(template), context));

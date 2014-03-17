@@ -1,0 +1,14 @@
+{
+    "name": "march",
+    "url" : "https://github.com/",
+    "license": "MIT",
+    "tags": [],
+    "description": "",
+    "version": "0.0.1",
+    "releasenote": "initialize.",
+    "contributors": ["cj"],
+    "dependencies": {
+        "mustache": "",
+        "mongodb": ""
+    }
+}
