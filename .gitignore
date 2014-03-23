@@ -3,3 +3,4 @@ vendor/
 mongdb/
 tmp/
 php/
+.DS_Store

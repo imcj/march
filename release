@@ -1,9 +1,7 @@
-#!/usr/bin/env bash
-
 date
 
 haxe -neko app.n -cp src -lib mustache -main App -lib mtwin -lib mockatoo \
 -lib mongodb -lib markdown -lib hxneko-redis \
--D debug
+-D release
 
 neko app.n

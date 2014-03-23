@@ -38,6 +38,7 @@ class GlobalContext
     public var test:String;
     public var page_header(get, null):String;
     public var page_footer(get, null):String;
+    public var url:String;
 
     var handler:Handler;
 
@@ -65,6 +66,20 @@ class GlobalContext
 
         Reflect.setField(this, "authorize?", authorize);
         Reflect.setField(this, "not_authorize?", !authorize);
+
+        #if debug
+        Reflect.setField(this, "debug?", true);
+        Reflect.setField(this, "release?", false);
+        #else
+        Reflect.setField(this, "debug?", false);
+        Reflect.setField(this, "release?", true);
+        #end
+
+        #if debug
+        url = "http://test.haxe-china.org";
+        #else
+        url = "http://haxe-china.qiniudn.com";
+        #end
     }
 
     public function get_page_header():String
@@ -202,6 +217,11 @@ class App extends Handler
         
 
         }
+    }
+
+    public function doChange_password()
+    {
+        render('user/change_password.html', {});
     }
 
     public function doSignin()
@@ -568,10 +588,27 @@ class App extends Handler
         // testPost();
         // testDefault();
         // testMarkdown();
+        // var redis = new redis.Redis();
+        // redis.lpush("k1", "v12");
+        // redis.lpush("k1", "v23");
+
+        // trace(redis.blpop("k1", 0));
+        // trace(redis.blpop("k1", 10));
+        // return;
+
         var uri = Web.getURI();
+
         if (uri.indexOf('.php') > -1 || uri.indexOf('.n') > -1)
             uri = uri.substr(uri.indexOf("/", 1));
 
+        #if debug
+        if (uri.startsWith('/public')) {
+            if (uri.endsWith('.css'))
+                Web.setHeader('Content-Type', 'text/css');
+            print(sys.io.File.getContent(uri.substr(1)));
+            return;
+        }
+        #end
         Dispatch.run(uri, null, new App());
 	}
 }
