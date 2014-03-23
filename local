@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+date
+haxe -php php -cp src -lib mustache -main App -lib mtwin -lib mockatoo \
+-lib mongodb -lib markdown

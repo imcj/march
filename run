@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
 
 haxe -neko app.n -cp src -lib mustache -main App -lib mtwin -lib mockatoo \
--lib mongodb
-neko app.n
+-lib mongodb -lib markdown

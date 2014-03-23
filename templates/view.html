@@ -1,0 +1,74 @@
+{{page_header}}
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+{{#post}}
+<ol class="breadcrumb">
+  <li><a href="/">Haxe China</a></li>
+  <li><a href="/t/{{id}}">{{title}}</a></li>
+</ol>
+{{/post}}
+      <table class="table table-bordered">
+        <tbody>
+          {{#post}}
+          <tr id="post-view">
+            <td>
+              <div class="clearfix">
+                <h1 class="pull-left">{{title}}</h1>
+
+                <img src="http://www.gravatar.com/avatar/{{author_email_hash}}" class="pull-right avatar" />
+
+              </div>
+              <div class="author-info">by <strong><a href="">{{author}}</a></strong> •</div>
+            </td>
+          </tr>
+          <tr>
+            <td>{{encoded_content}}</td>
+          </tr>
+          {{#moderator?}}
+          <tr>
+            <td class="">
+              <div class="pull-right"><a href="/post/?id={{id}}">编辑</a></div>
+            </td>
+          </tr>
+          {{/moderator?}}
+          {{/post}}
+        </tbody>
+      </table>
+
+      <table class="table table-bordered" id="replies">
+        <tbody>
+        {{#replies}}
+          <tr>
+            <td>
+              <div class="pull-left avatar"><img src="http://www.gravatar.com/avatar/{{author_email_hash}}" /></div>
+              <div class="pull-left">
+                <p class="author"><a href="">{{author}}</a></p>
+                {{encoded_content}}
+              </div>
+            </td>
+          </tr>
+
+        {{/replies}}
+        </tbody>
+      </table>
+    </div>
+    <div class="col-md-8 col-md-offset-2" id="reply">
+      <form class="form" role="form" method="post">
+        {{#errors?}}
+        <div class="alert alert-danger alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          {{#errors}}<p>{{error}}</p>{{/errors}}
+        </div>
+        {{/errors?}}
+        <div class="form-group">
+            <textarea name="content" class="form-control" placeholder="您要发表的内容？">{{content}}</textarea>
+        </div>
+        <button type="submit" class="btn btn-default">发表</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{{page_footer}}

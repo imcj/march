@@ -1,9 +1,82 @@
 package ;
 
-import handler.Handler;
-
+#if php
+import php.Web;
+import php.Lib;
+import php.Lib.print;
+#elseif neko
 import neko.Web;
+import neko.Lib;
+import neko.Lib.print;
+#end
+import handler.Handler;
+import haxe.web.Dispatch;
+
 import org.mongodb.Mongo;
+import org.mongodb.Cursor;
+
+using StringTools;
+
+class CursorHelper
+{
+    static public function array(cursor:Cursor):Array<Dynamic>
+    {
+        var items:Array<Dynamic> = [];
+        for (item in cursor) {
+            items.push(item);
+        }
+        return items;
+    }
+}
+
+class GlobalContext
+{
+    public var user:Dynamic;
+    public var header:Dynamic;
+    public var authorize:Bool;
+    public var not_authorize:Bool;
+    public var test:String;
+    public var page_header(get, null):String;
+    public var page_footer(get, null):String;
+
+    var handler:Handler;
+
+    public function new(request, mongo:Mongo)
+    {
+        handler = new Handler();
+
+        var user_id_string = request.session.get("user");
+        var user_id:Int;
+
+        header = {};
+        header.title = "Haxe China";
+
+        if (null == user_id_string)
+            user_id = null;
+        else 
+            user_id = Std.parseInt(user_id_string); 
+        if (null == user_id) {
+            user = null;
+            authorize = false;
+        } else {
+            user = mongo.march.users.findOne({"id": user_id});
+            authorize = true;
+        }
+
+        Reflect.setField(this, "authorize?", authorize);
+        Reflect.setField(this, "not_authorize?", !authorize);
+    }
+
+    public function get_page_header():String
+    {
+        return handler.render('header.html', this);       
+    }
+
+    public function get_page_footer():String
+    {
+        return handler.render('footer.html', this);
+    }
+}
 
 class App extends Handler
 {
@@ -16,29 +89,47 @@ class App extends Handler
         req = new Request();
         mongo = new Mongo();
         req.session = new MongoDBSession(req, mongo.march.sessions);
-
-        free("sigup", sigup); 
-        free("default", doDefault);
-        free("post", post);
     }
 
-    public function post()
+    function hash_md5(text:String):String
     {
-        var context:Dynamic = {};
+        return haxe.crypto.Md5.encode(text);
+    }
+
+    function get_context():Dynamic
+    {
+        return new GlobalContext(req, mongo);
+    }
+
+    public function doT(post_id:Int)
+    {
+        doPostView(post_id);
+    }
+
+
+    public function doPostView(post_id:Int)
+    {
+        var context:Dynamic = get_context();
+
+        context.error_title = context.error_content = "";
+
+        context.title = context.content = "";
+
+        var errors:Array<Dynamic> = [];
+        Reflect.setField(context, "errors", errors);
+        Reflect.setField(context, "errors?", false);
+        var user = mongo.march.users.findOne(
+            {"id": Std.parseInt(req.session.get("user"))});
+
+
         if ("POST" == req.method) {
-            var title = req.post.get("title");
             var content = req.post.get("content");
             var invalid = false;
-            if (0 >= title.length) {
-                context.error_title = '标题大于1个字母。';
-                invalid = true;
-            }
             if (0 >= content.length) {
                 context.error_content = '必需填写内容。';
+                errors.push({error:context.error_content});
                 invalid = true;
             }
-
-            var user = mongo.march.users.findOne({"id": Std.parseInt(req.session.get("user"))});
 
             if (null == user) {
                 invalid = true;
@@ -46,67 +137,362 @@ class App extends Handler
             }
 
             if (invalid) {
-                render('post.html', context);
+                print(render('reply.html', context));
             } else {
-                mongo.march.config.update({"key": "post"},{"$inc": {"ids": 1}}, true);
-                var id = mongo.march.config.findOne({"key": "post"}).ids;
-                mongo.march.posts.insert(
-                    {"title": title, 
-                     "content": content,
-                     "create_at": Date.now(),
-                     "author": req.session.get("user"),
-                     "id": id});
-                Web.redirect("/");
+                mongo.march.config.update({"key": "reply"},{"$inc": {"ids": 1}}, true);
+                var id = mongo.march.config.findOne({"key": "reply"}).ids;
+                mongo.march.replies.insert(
+                    {
+                        "content": content,
+                        "encoded_content": encodeContent(content),
+                        "post_id": post_id,
+                        "create_at": Date.now(),
+                        "author_id": req.session.get("user"),
+                        "author": user.username,
+                        "author_email": user.email,
+                        "id": id
+                    }
+                );
+
+                mongo.march.posts.update(
+                    {id: post_id},
+                    {
+                        "$set": {
+                            last_reply_at: Date.now(),
+                            last_reply_author: user.username,
+                            last_reply_author_id: user.id,
+                            last_reply_author_email: user.email,
+                            last_reply_author_email_hash: hash_md5(user.email),
+                        },
+                        "$inc": {
+                            { replies: 1 }
+                        }
+                    });
+                Web.redirect('/t/$post_id/');
             }
-        } else
-            render('post.html', {});
+        } else {
+
+            var post = mongo.march.posts.findOne({"id": post_id});
+            var replies = mongo.march.replies.find({"post_id": post_id});
+            var d:Date = post.create_at;
+            context.post = post;
+            context.replies = CursorHelper.array(replies);
+
+            context.header.title = '${post.title} - Haxe China';
+
+            Reflect.setField(context, "moderator?", 
+                user != null && post.author_id == user.id);
+            print(render("view.html", context));
+        
+
+        }
     }
 
-    public function sigup()
+    public function doSignin()
     {
-        var context:Dynamic = {};
+        var context = get_context();
+        var errors:Array<Dynamic> = [];
+        Reflect.setField(context, "errors", errors);
+        Reflect.setField(context, "errors?", false);
+        context.error_username = context.error_password = 
+            context.error_email = "";
+
+        context.username = context.password = context.email = "";
+
+
         if ("POST" == req.method) {
             var username = req.post.get("username");
             var password = req.post.get("password");
+            var email    = req.post.get("email");
             var invalid = false;
-            if (0 >= username.length) {
+
+            if (null == username || 0 >= username.length) {
                 context.error_username = '用户名大于1个字母。';
+                errors.push({error: context.error_username}); 
                 invalid = true;
+            } else {
+                context.username = username;
             }
-            if (0 >= password.length) {
+
+            if (null == password || 0 >= password.length) {
                 context.error_password = '必需填写密码。';
+                errors.push({error: context.error_password});
                 invalid = true;
+            } else {
+                context.password = password;
+            }
+
+            var user = mongo.march.users.findOne({"username": username});
+            if (null == user) {
+                context.error_username = '不存在的用户。';
+                errors.push({error: context.error_username});
+                invalid = true;
+            } else {
+                if (haxe.crypto.Md5.encode(password) != user.password) {
+                    context.error_password = '错误的密码。';
+                    errors.push({error: context.error_password});
+                    invalid = true;
+                }
+            }
+            Reflect.setField(context, "errors?", errors.length > 0);
+            
+
+            if (invalid) {
+                print(render('user/signin.html', context));
+            } else {
+                req.session.set("user", user.id);
+                Web.redirect("/");
+            }
+        } else
+            print(render('user/signin.html', context));
+    }
+
+    function encodeContent(content:String):String
+    {
+        /*
+        content = StringTools.htmlEscape(content);
+        content = StringTools.replace(content, "\n", "<br />");
+        return content;
+        */
+        // content = StringTools.replace(content, "<script", "%3C");
+        // return Markdown.markdownToHtml(content);
+        return markdown(content);
+    }
+
+    function markdown(content):String
+    {
+        var h = new haxe.Http("http://192.168.4.108:8080/");
+        h.setPostData(content);
+        var response:String = "";
+        h.onData = function(data)
+        {
+            response = data;
+        };
+        h.request(true);
+        return response;
+    }
+
+    public function doPost()
+    {
+        var context:Dynamic = get_context();
+        context.error_title = context.error_content = "";
+
+        var post_id:Int = null;
+        if (null != req.get.get("id"))
+            post_id = Std.parseInt(req.get.get("id"));
+        var post:Dynamic = null;
+        context.post_id = post_id;
+        if (null == post_id)
+            context.title = context.content = "";
+        else {
+            post = mongo.march.posts.findOne({id: post_id});
+            context.title = post.title;
+            context.content = post.content;
+            context.post = post;
+        }
+
+        var errors:Array<Dynamic> = [];
+        Reflect.setField(context, "errors", errors);
+        Reflect.setField(context, "errors?", false);
+
+        var user = mongo.march.users.findOne(
+                    {"id": Std.parseInt(req.session.get("user"))});
+
+        var invalid = false;
+        var not_editable = null != post && user.id != post.author_id;
+        if (not_editable) {
+            invalid = true;
+            errors.push({error: "只能编辑自己的帖子。"});
+            Reflect.setField(context, "errors?", true);
+        }
+
+        if (null == user) {
+            invalid = true;
+            context.error_validation = '没有登录';
+            errors.push({error: context.error_validation});
+            Reflect.setField(context, "errors?", true);
+        }
+
+        if ("POST" == req.method) {
+            if (not_editable) {
+                print(render('post.html', context));
+                return;
+            }
+
+            var title = req.post.get("title");
+            var content = req.post.get("content");
+            if (null != req.post.get("id"))
+                post_id = Std.parseInt(req.post.get("id"));
+
+            if (null == post_id)
+                post_id = 0;
+
+            var is_edit = post_id > 0;
+
+
+            if (0 >= title.length) {
+                context.error_title = '标题大于1个字母。';
+                invalid = true;
+                errors.push({error: context.error_title});
+            } else {
+                context.title = title;
+            }
+            if (0 >= content.length) {
+                context.error_content = '必需填写内容。';
+                invalid = true;
+                errors.push({error: context.error_content});
+            } else {
+                context.content = content;
+            }
+
+            if (invalid) {
+                Reflect.setField(context, "errors?", errors.length > 0);
+                print(render('post.html', context));
+            } else {
+                
+                var writing:Dynamic = 
+                    {"title": title, 
+                     "content": content,
+                     "encoded_content": encodeContent(content),
+                     "create_at": Date.now(),
+                     "update_at": Date.now(),
+                     "author_id": req.session.get("user"),
+                     "author": user.username,
+                     "author_email": user.email,
+                     "size": 1,
+                    };
+                var selector:Dynamic = null;
+                if (is_edit) {
+                    selector = {id: post_id};
+                    mongo.march.posts.update(
+                        selector,
+                        { "$set": writing });
+
+                    Web.redirect("/t/" + post_id);
+                } else {
+                    mongo.march.config.update(
+                            {"key": "post"},{"$inc": {"ids": 1}}, true);
+                    var id = mongo.march.config.findOne({"key": "post"}).ids;
+                    writing.id = id;
+                    writing.replies = 1;
+                    writing.last_reply_at = Date.now();
+                    writing.last_reply_author = user.username;
+                    writing.last_reply_author_id = user.id;
+                    writing.last_reply_author_email = user.email;
+                    writing.last_reply_author_email_hash = hash_md5(user.email);
+                    mongo.march.posts.insert(writing);
+
+                    Web.redirect("/");
+                }
+            }
+        } else
+            print(render('post.html', context));
+    }
+
+
+    public function doSignout()
+    {
+        req.session.set("user", null);
+        Web.redirect("/");
+    }
+
+    public function doSignup()
+    {
+        var context:Dynamic = get_context();
+        var errors:Array<Dynamic> = [];
+        Reflect.setField(context, "errors", errors);
+        Reflect.setField(context, "errors?", false);
+        context.error_username = context.error_password = 
+            context.error_email = "";
+
+        context.username = context.password = context.email = "";
+
+
+        if ("POST" == req.method) {
+            var username = req.post.get("username");
+            var password = req.post.get("password");
+            var email    = req.post.get("email");
+            var invalid = false;
+
+            if (null == username || 0 >= username.length) {
+                context.error_username = '用户名大于1个字母。';
+                errors.push({error: context.error_username}); 
+                invalid = true;
+            } else {
+                context.username = username;
+            }
+
+            if (null == password || 0 >= password.length) {
+                context.error_password = '必需填写密码。';
+                errors.push({error: context.error_password});
+                invalid = true;
+            } else {
+                context.password = password;
+            }
+            if (null == email || 0 >= email.length) {
+                context.error_email = '请输入正确的电子邮件';
+                errors.push({error: context.error_email});
+                invalid = true;
+            } else {
+                context.email = email;
             }
 
             if (null != mongo.march.users.findOne({"username": username})) {
                 context.error_username = '已经存在的用户。';
+                errors.push({error: context.error_username});
                 invalid = true;
             }
+            Reflect.setField(context, "errors?", errors.length > 0);
+            
 
             if (invalid) {
-                render('user/sigup.html', context);
+                print(render('user/signup.html', context));
             } else {
                 mongo.march.config.update({"key": "user"},{"$inc": {"ids": 1}}, true);
                 var id = mongo.march.config.findOne({"key": "user"}).ids;
                 mongo.march.users.insert(
-                    {"username": username, "password": password, "id": id});
+                    {"username": username,
+                     "password": haxe.crypto.Md5.encode(password),
+                     "email": email,
+                     "id": id});
                 req.session.set("user", id);
                 Web.redirect("/");
             }
         } else
-            render('user/sigup.html', {});
+            print(render('user/signup.html', context));
     }
 
     public function doDefault()
     {
         var posts = [];
-        for (post in mongo.march.posts.find())
-            posts.push(post);
+        var page_string:String = req.get.get("page");
+        if (null == page_string)
+            page_string = "1";
+        var page:Int = Std.parseInt(page_string);
+        var page_size:Int = 10;
+        var skip = (page - 1) * page_size;
+        var cursor = mongo.march.posts.find(
+            {"$orderby": {"last_reply_at": -1}, "$maxScan": skip + page_size, "$query":{}},// */{},
+            {}, skip);
 
-        render('default.html', {
-            "posts": posts,
-            'tests': [{"name":1},{name:2}]
-            });
+        for (post in cursor) {
+            post.author_email_hash = haxe.crypto.Md5.encode(post.author_email);
+            posts.push(post);
+        }
+
+        if (null == page)
+            page = 1;
+
+        var page_previous = page - 1;
+        if (page_previous < 1)
+            page_previous = 1;
+
+        var context = get_context();
+        context.posts = posts;
+        context.page_next = page + 1;
+        context.page_previous = page_previous;
+
+        print(render('default.html', context));
     }
 
     static public function assert(a, b)
@@ -115,12 +501,12 @@ class App extends Handler
             throw "error";
     }
 
-    static public function testSigup()
+    static public function testSignup()
     {
         var app = new App();
 
-        app.req = new mock.SigupInputModel();
-        app.sigup();
+        app.req = new mock.SignupInputModel();
+        app.doSignup();
     }
 
     static public function testPost()
@@ -128,14 +514,13 @@ class App extends Handler
         var app = new App();
 
         app.req = new mock.PostInputModel();
-        app.post();
+        app.doPost();
     }
 
     static public function testSession()
     {
         var session = new MongoDBSession(new Request(), new Mongo().march.sessions);
         session.set("username", "cj");
-        trace(session.get("username"));
         assert("cj", session.get("username"));
     }
 
@@ -145,18 +530,30 @@ class App extends Handler
         app.doDefault();
     }
 
+    static public function testMarkdown()
+    {
+        var h = new haxe.Http("http://192.168.4.108:8080/");
+        h.setPostData("```python\nimport os```");
+        var response:String = "";
+        h.onData = function(data)
+        {
+            response = data;
+        };
+        h.request(true);
+        return response;
+    }
+
 	static public function main()
 	{
-        mtwin.templo.Loader.BASE_DIR = "./templates/";
-        mtwin.templo.Loader.TMP_DIR = "./tmp";
-
         // testSigup();
         // testSession();
         // testPost();
         // testDefault();
+        // testMarkdown();
+        var uri = Web.getURI();
+        if (uri.indexOf('.php') > -1 || uri.indexOf('.n') > -1)
+            uri = uri.substr(uri.indexOf("/", 1));
 
-        var _request = new mtwin.web.Request();
-        var level = if (_request.getPathInfoPart(0) == "app.n") 1 else 0;
-        new App().execute(_request, level);
+        Dispatch.run(uri, null, new App());
 	}
 }

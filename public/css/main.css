@@ -1,0 +1,63 @@
+.avatar {
+  width: 60px;
+  height: 60px;
+  margin-right: 10px;
+}
+
+.avatar img {
+  width: 60px;
+  height: 60px;
+}
+
+#post-list  p {
+  margin: 0px;
+  padding: 0px;
+}
+
+.title {
+  font-size: 16px;
+  line-height: 200%;
+}
+
+#replies p {
+  margin: 0px;
+}
+
+#replies .author a {
+  color: #aaa;
+}
+
+#replies .avatar, #replies .avatar img {
+  width: 40px;
+  height: 40px;
+}
+
+#new-post {
+  height: 30px;
+  line-height: 30px;
+}
+
+#post textarea {
+  height: 500px;
+}
+
+#reply textarea {
+  height: 100px;
+}
+
+#post-view h1 {
+  display: block;
+  padding: 0px;
+  margin:  0px;
+}
+
+#post-view .avatar {
+  width:  50px;
+  margin: 0px;
+  height: 50px;
+}
+
+#post-view .author-info {
+  font-size: 12px;
+  color: #aaa;
+}

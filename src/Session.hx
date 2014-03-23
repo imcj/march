@@ -3,12 +3,12 @@ package ;
 class Session
 {
     var request:Request;
-    var id:String;
+    var haxe_id:String;
 
     public function new(request:Request)
     {
         this.request = request;
-        var haxe_id = request.cookie.get("haxe_id");
+        haxe_id = request.cookie.get("haxe_id");
         if (null == haxe_id) {
             haxe_id = haxe.crypto.Md5.encode(Std.string(Math.random()));
             request.cookie.set("haxe_id", haxe_id);

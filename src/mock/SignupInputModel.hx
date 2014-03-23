@@ -2,7 +2,7 @@ package mock;
 
 import haxe.ds.StringMap;
 
-class SigupInputModel extends Request
+class SignupInputModel extends Request
 {
     public function new()
     {

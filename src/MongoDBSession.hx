@@ -14,7 +14,10 @@ class MongoDBSession extends Session
 
     override public function get(key:String):String
     {
-        return collection.findOne({"key":key}).value;
+        var document = collection.findOne({"key":key, haxe_id: haxe_id});
+        if (null == document)
+            return null;
+        return document.value;
     }
 
     override public function set(key:String, value:String):Void
@@ -22,6 +25,7 @@ class MongoDBSession extends Session
         collection.update(
             {"key": key},
             {"$set": {
+                "haxe_id": haxe_id,
                 "key": key,
                 "value": value
             }}, true, false);
