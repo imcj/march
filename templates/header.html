@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="CJ">
-    <link rel="stylesheet" href="/public/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/public/css/main.css">
-    <link rel="stylesheet" href="/public/css/default.css">
+    <link rel="stylesheet" href="http://haxe-china.qiniudn.com/public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://haxe-china.qiniudn.com/public/css/main.css">
+    <link rel="stylesheet" href="http://haxe-china.qiniudn.com/public/css/default.css">
     <title>{{#header}}{{title}}{{/header}}</title>
   </head>
   <body>
   <nav class="navbar navbar-default" role="navigation">
+    <div class="container">
     <!-- Brand and toggle get grouped for better mobile display -->
     <div class="navbar-header">
       <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
@@ -31,9 +32,7 @@
         <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{#user}}{{username}}{{/user}}<b class="caret"></b></a>
           <ul class="dropdown-menu">
-            <li><a href="#">Action</a></li>
-            <li><a href="#">Another action</a></li>
-            <li><a href="#">Something else here</a></li>
+            <li><a href="/change_password">设置密码</a></li>
             <li class="divider"></li>
             <li><a href="/signout">登出</a></li>
           </ul>
@@ -45,4 +44,5 @@
         {{/not_authorize?}}
       </ul>
     </div><!-- /.navbar-collapse -->
+  </div>
   </nav>

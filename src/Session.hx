@@ -10,8 +10,10 @@ class Session
         this.request = request;
         haxe_id = request.cookie.get("haxe_id");
         if (null == haxe_id) {
+            var expire = Date.fromTime(
+                (Date.now().getTime() + 60 * 60 * 24 * 30 * 1000));
             haxe_id = haxe.crypto.Md5.encode(Std.string(Math.random()));
-            request.cookie.set("haxe_id", haxe_id);
+            request.cookie.set("haxe_id", haxe_id, expire);
         } else {
             haxe_id = request.cookie.get("haxe_id");
         }

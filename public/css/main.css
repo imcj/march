@@ -9,9 +9,18 @@
   height: 60px;
 }
 
-#post-list  p {
+#post-list  .title {
   margin: 0px;
   padding: 0px;
+  font-size: 20px;
+  line-height: 200%;
+}
+
+#post-list .info {
+  font-size: 11px;
+  color: #aaa;
+  line-height: 110%;
+  font-family: "Helvetica Neue", "Luxi Sans", "DejaVu Sans", Tahoma, "Hiragino Sans GB", STHeiti !important;
 }
 
 .title {
@@ -23,13 +32,24 @@
   margin: 0px;
 }
 
-#replies .author a {
+#replies .author {
+  font-size: 11px;
   color: #aaa;
+  line-height: 150%;
 }
 
 #replies .avatar, #replies .avatar img {
   width: 40px;
   height: 40px;
+}
+
+#replies .author .pretty-date {
+  margin-left: 8px;
+}
+
+#replies .content {
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 #new-post {
@@ -38,7 +58,7 @@
 }
 
 #post textarea {
-  height: 500px;
+  height: 250%;
 }
 
 #reply textarea {
@@ -59,5 +79,6 @@
 
 #post-view .author-info {
   font-size: 12px;
+  line-height: 120%;
   color: #aaa;
 }

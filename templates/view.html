@@ -20,7 +20,7 @@
                 <img src="http://www.gravatar.com/avatar/{{author_email_hash}}" class="pull-right avatar" />
 
               </div>
-              <div class="author-info">by <strong><a href="">{{author}}</a></strong> •</div>
+              <div class="author-info">by <strong><a href="">{{author}}</a></strong> •{{pretty_date}}</div>
             </td>
           </tr>
           <tr>
@@ -44,8 +44,10 @@
             <td>
               <div class="pull-left avatar"><img src="http://www.gravatar.com/avatar/{{author_email_hash}}" /></div>
               <div class="pull-left">
-                <p class="author"><a href="">{{author}}</a></p>
-                {{encoded_content}}
+                <p class="author"><a href="">{{author}}</a><span class="pretty-date">{{pretty_date}}</span></p>
+                <p class="content">
+                  {{encoded_content}}
+                </p>
               </div>
             </td>
           </tr>

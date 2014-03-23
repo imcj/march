@@ -172,11 +172,27 @@ class App extends Handler
             }
         } else {
 
+            mongo.march.posts.update(
+                {id: post_id},
+                {
+                    "$inc": {
+                        visit: 1
+                    }
+                }
+            );
+
             var post = mongo.march.posts.findOne({"id": post_id});
-            var replies = mongo.march.replies.find({"post_id": post_id});
-            var d:Date = post.create_at;
+            post.pretty_date = PrettyDate.pretty(post.create_at.getTime());
+            var replies:Dynamic = [];
             context.post = post;
-            context.replies = CursorHelper.array(replies);
+
+            for (reply in mongo.march.replies.find({"post_id": post_id})) {
+                reply.pretty_date = PrettyDate.pretty(reply.create_at.getTime());
+                replies.push(reply);
+            }
+
+            context.replies = replies; //CursorHelper.array(replies);
+
 
             context.header.title = '${post.title} - Haxe China';
 
@@ -350,17 +366,17 @@ class App extends Handler
                 print(render('post.html', context));
             } else {
                 
-                var writing:Dynamic = 
-                    {"title": title, 
-                     "content": content,
-                     "encoded_content": encodeContent(content),
-                     "create_at": Date.now(),
-                     "update_at": Date.now(),
-                     "author_id": req.session.get("user"),
-                     "author": user.username,
-                     "author_email": user.email,
-                     "size": 1,
-                    };
+                var writing:Dynamic =  {
+                    "title": title, 
+                    "content": content,
+                    "encoded_content": encodeContent(content),
+                    "update_at": Date.now(),
+                    "author_id": req.session.get("user"),
+                    "author": user.username,
+                    "author_email": user.email,
+                    "author_email_hash": hash_md5(user.email),
+                };
+
                 var selector:Dynamic = null;
                 if (is_edit) {
                     selector = {id: post_id};
@@ -374,6 +390,7 @@ class App extends Handler
                             {"key": "post"},{"$inc": {"ids": 1}}, true);
                     var id = mongo.march.config.findOne({"key": "post"}).ids;
                     writing.id = id;
+                    writing.create_at = Date.now();
                     writing.replies = 1;
                     writing.last_reply_at = Date.now();
                     writing.last_reply_author = user.username;
@@ -477,6 +494,7 @@ class App extends Handler
 
         for (post in cursor) {
             post.author_email_hash = haxe.crypto.Md5.encode(post.author_email);
+            post.pretty_date = PrettyDate.pretty(post.create_at.getTime());
             posts.push(post);
         }
 

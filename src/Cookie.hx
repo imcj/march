@@ -21,9 +21,11 @@ class Cookie
         cookies = Web.getCookies();
     }
 
-    public function set(key:String, value:String)
+    public function set(key:String, value:String, ?expire:Date=null,
+        ?domain:String=null, ?path:String=null, ?secure:Bool=null, 
+        ?httpOnly:Bool=null)
     {
-        Web.setCookie(key, value);
+        Web.setCookie(key, value, expire, domain, path, secure, httpOnly);
     }
 
     public function get(key):String
