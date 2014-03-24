@@ -357,6 +357,9 @@ class App extends Handler
 
             var title = req.post.get("title");
             var content = req.post.get("content");
+            var draft:Bool = req.post.get("draft") == null ? false :
+                req.post.get("draft") == "on" ? true : false;
+
             if (null != req.post.get("id"))
                 post_id = Std.parseInt(req.post.get("id"));
 
@@ -395,6 +398,7 @@ class App extends Handler
                     "author": user.username,
                     "author_email": user.email,
                     "author_email_hash": hash_md5(user.email),
+                    "draft": draft,
                 };
 
                 var selector:Dynamic = null;
@@ -422,8 +426,20 @@ class App extends Handler
                     Web.redirect("/");
                 }
             }
-        } else
+        } else {
+            if (!not_editable) {
+                if (Reflect.hasField(post, "draft")) {
+                    var is_draft = Reflect.field(post, "draft");
+                    if (is_draft)
+                        context.draft_input_checked = " checked=\"checked\"";
+                    else
+                        context.draft_input_checked = "";
+                }
+            } else {
+                context.draft_input_checked = "";
+            }
             print(render('post.html', context));
+        }
     }
 
 
@@ -501,6 +517,7 @@ class App extends Handler
 
     public function doDefault()
     {
+        var context = get_context();
         var posts = [];
         var page_string:String = req.get.get("page");
         if (null == page_string)
@@ -508,9 +525,35 @@ class App extends Handler
         var page:Int = Std.parseInt(page_string);
         var page_size:Int = 10;
         var skip = (page - 1) * page_size;
+        var user_id = context.user == null ? 0 : context.user.id;
+        
+        var condition_draft_of_user:Array<Dynamic> = [
+            {draft: true},
+            {author_id: user_id},
+        ];
+        var condition:Array<Dynamic> = [
+            {
+                "draft": false,
+            },
+            {
+                draft: { "$exists": false }
+            },
+            {
+                "$and": condition_draft_of_user
+            }
+        ];
         var cursor = mongo.march.posts.find(
-            {"$orderby": {"last_reply_at": -1}, "$maxScan": skip + page_size, "$query":{}},// */{},
-            {}, skip);
+            {
+                "$orderby": {"last_reply_at": -1},
+                "$maxScan": skip + page_size,
+                "$query": {
+                    "$or": condition
+                }
+            },
+            {
+                "content": false,
+            }, 
+            skip);
 
         for (post in cursor) {
             post.author_email_hash = haxe.crypto.Md5.encode(post.author_email);
@@ -525,7 +568,6 @@ class App extends Handler
         if (page_previous < 1)
             page_previous = 1;
 
-        var context = get_context();
         context.posts = posts;
         context.page_next = page + 1;
         context.page_previous = page_previous;
@@ -588,13 +630,6 @@ class App extends Handler
         // testPost();
         // testDefault();
         // testMarkdown();
-        // var redis = new redis.Redis();
-        // redis.lpush("k1", "v12");
-        // redis.lpush("k1", "v23");
-
-        // trace(redis.blpop("k1", 0));
-        // trace(redis.blpop("k1", 10));
-        // return;
 
         var uri = Web.getURI();
 
