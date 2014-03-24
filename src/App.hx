@@ -221,7 +221,71 @@ class App extends Handler
 
     public function doChange_password()
     {
-        render('user/change_password.html', {});
+        var context = get_context();
+        var errors:Array<Dynamic> = [];
+        Reflect.setField(context, "errors", errors);
+        Reflect.setField(context, "errors?", false);
+
+        context.error_origin_password = context.error_password =
+            context.error_repassword = context.origin_password =
+            context.password = context.repassword = "";
+
+        if ("POST" == req.method) {
+            var origin_password = req.post.get("origin_password");
+            var password = req.post.get("password");
+            var repassword = req.post.get("repassword");
+            var invalid = false;
+
+            if (null == origin_password || 0 >= origin_password.length) {
+                context.error_origin_password = '请输入原始密码。';
+                errors.push({error: context.error_origin_password});
+                invalid = true;
+            } else {
+                context.origin_password = origin_password;
+            }
+
+            if (null == password || 0 >= password.length) {
+                context.error_password = '必须填写密码';
+                errors.push({error: context.error_password});
+                invalid = true;
+            } else {
+                context.password = password;
+            }
+
+            if (null == repassword || 0 >= repassword.length) {
+                context.error_repassword = '密码填写重复输入密码。';
+                errors.push({error: context.error_repassword});
+                invalid = true;
+            } else {
+                context.repassword = repassword;
+            }
+
+            if (null != repassword && null != password && 
+                password != repassword) {
+                context.error_repassword = '两次密码输入不一致。';
+                invalid = true;
+            }
+
+            if (invalid) {
+                Reflect.setField(context, "errors?", errors.length > 0);
+                print(render('user/change_password.html', context));
+            } else {
+
+                mongo.march.users.update(
+                    {
+                        id: context.user.id
+                    },
+                    {
+                        "$set": {
+                            password: hash_md5(password)
+                        }
+                    });
+
+                Web.redirect("/signout");
+            }
+        } else {
+            print(render('user/change_password.html', context));
+        }
     }
 
     public function doSignin()
@@ -363,11 +427,11 @@ class App extends Handler
                 req.post.get("hide_email") == "on" ? true : false;
             var emails:Array<String>;
             if (hide_email) {
-                var f = Email.fetch(true);
+                var f = EMail.fetch(content, true);
                 emails = f.emails;
                 content = f.content;
             } else {
-                var f = Email.fetch(false);
+                var f = EMail.fetch(content, false);
                 emails = f.emails;
             }
             if (null != req.post.get("id"))
