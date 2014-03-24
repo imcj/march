@@ -359,7 +359,17 @@ class App extends Handler
             var content = req.post.get("content");
             var draft:Bool = req.post.get("draft") == null ? false :
                 req.post.get("draft") == "on" ? true : false;
-
+            var hide_email:Bool = req.post.get("hide_email") == null ? false :
+                req.post.get("hide_email") == "on" ? true : false;
+            var emails:Array<String>;
+            if (hide_email) {
+                var f = Email.fetch(true);
+                emails = f.emails;
+                content = f.content;
+            } else {
+                var f = Email.fetch(false);
+                emails = f.emails;
+            }
             if (null != req.post.get("id"))
                 post_id = Std.parseInt(req.post.get("id"));
 
@@ -632,6 +642,12 @@ class App extends Handler
         return response;
     }
 
+    static public function testEmailFetch()
+    {
+        var content = EMail.fetch("1\nnotifications@haxe-china.org\n2", true);
+        trace(content);
+    }
+
 	static public function main()
 	{
         // testSigup();
@@ -639,6 +655,8 @@ class App extends Handler
         // testPost();
         // testDefault();
         // testMarkdown();
+        // testEmailFetch();
+        // return;
 
         var uri = Web.getURI();
 

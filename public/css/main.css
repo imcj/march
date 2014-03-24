@@ -1,3 +1,7 @@
+body {
+  font-family: "Helvetica Neue", "Luxi Sans", "DejaVu Sans", Tahoma, "Hiragino Sans GB", STHeiti !important;
+}
+
 .avatar {
   width: 60px;
   height: 60px;
@@ -20,7 +24,6 @@
   font-size: 11px;
   color: #aaa;
   line-height: 110%;
-  font-family: "Helvetica Neue", "Luxi Sans", "DejaVu Sans", Tahoma, "Hiragino Sans GB", STHeiti !important;
 }
 
 .title {
@@ -58,7 +61,7 @@
 }
 
 #post textarea {
-  height: 250%;
+  height: 300px;
 }
 
 #reply textarea {
