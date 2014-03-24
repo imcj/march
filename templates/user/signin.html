@@ -3,15 +3,15 @@
 <div class="container">
   <div class="row">
     <div class="col-md-6 col-md-offset-3">
+      {{#errors?}}
+      <div class="alert alert-danger alert-dismissable">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        {{#errors}}<p>{{error}}</p>{{/errors}}
+      </div>
+      {{/errors?}}
       <div class="form-panel">
         <div class="form-panel-title"><h3>登录</h3></div>
           <form role="form" method="post">
-            {{#errors?}}
-            <div class="alert alert-danger alert-dismissable">
-              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-              {{#errors}}<p>{{error}}</p>{{/errors}}
-            </div>
-            {{/errors?}}
             <div class="form-group">
               <label for="username" class="control-label">用户名</label>
               <input type="text" class="form-control" id="username" name="username" placeholder="用户名" value="{{username}}">

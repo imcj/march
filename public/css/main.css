@@ -91,6 +91,10 @@ body {
   border: 1px solid #CCC;
 }
 
+.form-panel .alert {
+  margin: 0px 10px;
+}
+
 .form-panel form {
   margin: 20px 0px;
 }
