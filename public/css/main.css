@@ -82,3 +82,33 @@
   line-height: 120%;
   color: #aaa;
 }
+
+.form-panel {
+  border-radius: 5px;
+  border: 1px solid #CCC;
+}
+
+.form-panel form {
+  margin: 20px 0px;
+}
+
+.form-panel .form-group {
+  margin: 10px;
+}
+
+.form-panel-title {
+  border-bottom: 1px solid #CCC;
+  padding: 15px;
+}
+
+.form-panel-title h3 {
+  font-size: 18px;
+  margin: 0px;
+  padding: 0px;
+}
+
+.form-panel-footer {
+  border-top: 1px solid #CCC;
+  margin-top: 20px;
+  padding-top: 10px;
+}

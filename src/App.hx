@@ -490,11 +490,20 @@ class App extends Handler
                 context.email = email;
             }
 
-            if (null != mongo.march.users.findOne({"username": username})) {
+            var user = mongo.march.users.findOne({"username": username});
+            if (null != user) {
                 context.error_username = '已经存在的用户。';
                 errors.push({error: context.error_username});
                 invalid = true;
             }
+
+            if (null != email &&
+                null != mongo.march.users.findOne({"email": email})) {
+                context.error_email = '邮件地址已经被使用';
+                errors.push({error: context.error_email});
+                invalid = true;
+            }
+
             Reflect.setField(context, "errors?", errors.length > 0);
             
 
