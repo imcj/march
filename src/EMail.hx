@@ -11,6 +11,8 @@ class EMail
         var previous;
         while (true) {
             var match = regular.matchSub(content, pos.pos + pos.len);
+            if (!match && pos.pos == 0 && pos.len == 0)
+                returns = content;
             if (!match)
                 break;
             previous = pos;
