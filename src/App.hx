@@ -362,7 +362,7 @@ class App extends Handler
 
     function markdown(content):String
     {
-        var h = new haxe.Http("http://haxe-china.org:8001/");
+        var h = new haxe.Http("http://md.haxe-china.org/");
         h.setPostData(content);
         var response:String = "";
         h.onData = function(data)
@@ -431,7 +431,6 @@ class App extends Handler
                 var f = EMail.fetch(content, true);
                 emails = f.emails;
                 content = f.content;
-                trace(content);
             } else {
                 var f = EMail.fetch(content, false);
                 emails = f.emails;
@@ -697,7 +696,7 @@ class App extends Handler
 
     static public function testMarkdown()
     {
-        var h = new haxe.Http("http://192.168.4.108:8080/");
+        var h = new haxe.Http("http://md.haxe-china.org/");
         h.setPostData("```python\nimport os```");
         var response:String = "";
         h.onData = function(data)
@@ -705,12 +704,15 @@ class App extends Handler
             response = data;
         };
         h.request(true);
+        trace(response);
         return response;
     }
 
     static public function testEmailFetch()
     {
         var content = EMail.fetch("1\nnotifications@haxe-china.org\n2", true);
+        trace(content);
+        content = EMail.fetch("hi", true);
         trace(content);
     }
 
