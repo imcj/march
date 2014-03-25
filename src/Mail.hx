@@ -16,6 +16,10 @@ class Mail
         h.setContent(content);
         t.setContent(text_content);
 
+        #if debug
         mtwin.mail.Smtp.send("127.0.0.1", from, to, p.get(), 8025);
+        #else
+        mtwin.mail.Smtp.send("127.0.0.1", from, to, p.get());
+        #end
     }
 }

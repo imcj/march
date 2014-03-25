@@ -154,6 +154,7 @@ class App extends Handler
     public function reply_notify(post:Dynamic, reply:Dynamic, user:Dynamic)
     {
         reply.pretty_date = PrettyDate.pretty(reply.create_at.getTime());
+        var context = get_context();
         var subscribers = mongo.march.subscribe.find({
             post_id: reply.post_id,
             user_id: { "$ne": user.id }
@@ -163,10 +164,27 @@ class App extends Handler
             post: post,
             reply: reply,
             user: user,
+            url: context.url,
             });
 
         for (subscriber in subscribers)
             Mail.sendmail(subscriber.email, post.title, content);
+    }
+
+    public function invite_notify(emails:Array<String>, user:Dynamic, 
+        post:Dynamic)
+    {
+        var context = get_context();
+        var content = render('email/invite.html', {
+            post: post,
+            user: user,
+            url: context.url,
+        });
+
+        var title = '您的朋友 ${user.username} 在主题 ${post.title} 中提到你。';
+
+        for (email in emails)
+            Mail.sendmail(email, title, content);
     }
 
     public function doT(post_id:Int)
@@ -241,6 +259,8 @@ class App extends Handler
                 subscribe(post_id, user);
 
                 reply_notify(post, reply, user);
+                // invite_notify(emails, user, reply);
+
                 Web.redirect('/t/$post_id/');
             }
         } else {
@@ -484,14 +504,6 @@ class App extends Handler
             var hide_email:Bool = req.post.get("hide_email") == null ? false :
                 req.post.get("hide_email") == "on" ? true : false;
             var emails:Array<String>;
-            if (hide_email) {
-                var f = EMail.fetch(content, true);
-                emails = f.emails;
-                content = f.content;
-            } else {
-                var f = EMail.fetch(content, false);
-                emails = f.emails;
-            }
             if (null != req.post.get("id"))
                 post_id = Std.parseInt(req.post.get("id"));
 
@@ -516,6 +528,19 @@ class App extends Handler
                 context.content = content;
             }
 
+            var hidden_content:String;
+            if (hide_email) {
+                var f = EMail.fetch(content, true);
+                emails = f.emails;
+                hidden_content = f.content;
+            } else {
+                var f = EMail.fetch(content, false);
+                emails = f.emails;
+                hidden_content = content;
+            }
+
+            var encoded = encodeContent(hidden_content);
+
             if (invalid) {
                 Reflect.setField(context, "errors?", errors.length > 0);
                 print(render('post.html', context));
@@ -524,7 +549,7 @@ class App extends Handler
                 var writing:Dynamic =  {
                     "title": title, 
                     "content": content,
-                    "encoded_content": encodeContent(content),
+                    "encoded_content": encoded,
                     "update_at": Date.now(),
                     "author_id": req.session.get("user"),
                     "author": user.username,
@@ -539,6 +564,9 @@ class App extends Handler
                     mongo.march.posts.update(
                         selector,
                         { "$set": writing });
+
+                    writing.id = post_id;
+                    invite_notify(emails, user, writing);
 
                     Web.redirect("/t/" + post_id);
                 } else {
@@ -556,6 +584,7 @@ class App extends Handler
                     mongo.march.posts.insert(writing);
 
                     subscribe(id, context.user);
+                    invite_notify(emails, user, writing);
 
                     Web.redirect("/");
                 }
@@ -688,7 +717,7 @@ class App extends Handler
         var cursor = mongo.march.posts.find(
             {
                 "$orderby": {"last_reply_at": -1},
-                "$maxScan": skip + page_size,
+                // "$maxScan": skip + page_size,
                 "$query": {
                     "$or": condition
                 }
@@ -696,7 +725,7 @@ class App extends Handler
             {
                 "content": false,
             }, 
-            skip);
+            skip, page_size);
 
         for (post in cursor) {
             post.author_email_hash = haxe.crypto.Md5.encode(post.author_email);
@@ -763,16 +792,13 @@ class App extends Handler
             response = data;
         };
         h.request(true);
-        trace(response);
         return response;
     }
 
     static public function testEmailFetch()
     {
         var content = EMail.fetch("1\nnotifications@haxe-china.org\n2", true);
-        trace(content);
         content = EMail.fetch("hi", true);
-        trace(content);
     }
 
 	static public function main()
