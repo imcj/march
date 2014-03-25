@@ -78,7 +78,8 @@ class GlobalContext
         #if debug
         url = "http://test.haxe-china.org";
         #else
-        url = "http://haxe-china.qiniudn.com";
+        // url = "http://haxe-china.qiniudn.com";
+        url = "http://haxe-china.org";
         #end
     }
 
@@ -361,7 +362,7 @@ class App extends Handler
 
     function markdown(content):String
     {
-        var h = new haxe.Http("http://192.168.4.108:8080/");
+        var h = new haxe.Http("http://haxe-china.org:8001/");
         h.setPostData(content);
         var response:String = "";
         h.onData = function(data)
@@ -430,6 +431,7 @@ class App extends Handler
                 var f = EMail.fetch(content, true);
                 emails = f.emails;
                 content = f.content;
+                trace(content);
             } else {
                 var f = EMail.fetch(content, false);
                 emails = f.emails;

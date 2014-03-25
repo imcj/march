@@ -34,7 +34,7 @@ class Handler
 		sendNoCacheHeaders();
 		var template = 'templates/$template';
 		if (Sys.getEnv("MOD_NEKO") == "2")
-			template = '/vhost/haxe-china.org/${template}';
+			template = '/var/www/haxe-china.org/${template}';
 		
 	    return mustache.Mustache.render(
 				sys.io.File.getContent(template), context);

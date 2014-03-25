@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
 ./release
-rsync -avz -e ssh -r app.n root@imcj.me:/vhost/haxe-china.org
-rsync -avz -e ssh -r templates/* root@imcj.me:/vhost/haxe-china.org/templates
-rsync -avz -e ssh -r public/* root@imcj.me:/vhost/haxe-china.org/public
+rsync -avz -e ssh -r release.n root@haxe-china.org:/var/www/haxe-china.org/app.n
+rsync -avz -e ssh -r templates/* root@haxe-china.org:/var/www/haxe-china.org/templates
+rsync -avz -e ssh -r public/* root@haxe-china.org:/var/www/haxe-china.org/public
