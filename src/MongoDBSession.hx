@@ -23,7 +23,7 @@ class MongoDBSession extends Session
     override public function set(key:String, value:String):Void
     {
         collection.update(
-            {"key": key},
+            {"key": key, haxe_id: haxe_id},
             {"$set": {
                 "haxe_id": haxe_id,
                 "key": key,

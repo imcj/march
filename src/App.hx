@@ -117,6 +117,58 @@ class App extends Handler
         return new GlobalContext(req, mongo);
     }
 
+    public function subscribe(post_id, user)
+    {
+        var _subscribe = mongo.march.subscribe.findOne(
+            {post_id: post_id, user_id: user.id});
+
+        if (null == _subscribe) {
+            mongo.march.subscribe.insert({
+                post_id: post_id,
+                user_id: user.id,
+                email: user.email,
+                unavailable: false,
+            });
+        }
+    }
+
+    public function unsubscribe(post_id, user)
+    {
+        var _subscribe = mongo.march.subscribe.findOne(
+            {post_id: post_id, user_id: user.id, unavailable: false});
+        if (null != _subscribe) {
+            mongo.march.subscribe.update(
+                {post_id: post_id, user_id: user.id},
+                {
+                    "$set": {
+                        unavailable: true,
+                    }
+                }
+            );
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function reply_notify(post:Dynamic, reply:Dynamic, user:Dynamic)
+    {
+        reply.pretty_date = PrettyDate.pretty(reply.create_at.getTime());
+        var subscribers = mongo.march.subscribe.find({
+            post_id: reply.post_id,
+            user_id: { "$ne": user.id }
+        });
+
+        var content = render('email/reply.html', {
+            post: post,
+            reply: reply,
+            user: user,
+            });
+
+        for (subscriber in subscribers)
+            Mail.sendmail(subscriber.email, post.title, content);
+    }
+
     public function doT(post_id:Int)
     {
         doPostView(post_id);
@@ -155,10 +207,11 @@ class App extends Handler
             if (invalid) {
                 print(render('reply.html', context));
             } else {
-                mongo.march.config.update({"key": "reply"},{"$inc": {"ids": 1}}, true);
+                mongo.march.config.update(
+                    {"key": "reply"},{"$inc": {"ids": 1}}, true);
+                var post = mongo.march.posts.findOne({id: post_id});
                 var id = mongo.march.config.findOne({"key": "reply"}).ids;
-                mongo.march.replies.insert(
-                    {
+                var reply = {
                         "content": content,
                         "encoded_content": encodeContent(content),
                         "post_id": post_id,
@@ -166,10 +219,10 @@ class App extends Handler
                         "author_id": req.session.get("user"),
                         "author": user.username,
                         "author_email": user.email,
+                        "author_email_hash": hash_md5(user.email),
                         "id": id
-                    }
-                );
-
+                };
+                mongo.march.replies.insert(reply);
                 mongo.march.posts.update(
                     {id: post_id},
                     {
@@ -184,6 +237,10 @@ class App extends Handler
                             { replies: 1 }
                         }
                     });
+
+                subscribe(post_id, user);
+
+                reply_notify(post, reply, user);
                 Web.redirect('/t/$post_id/');
             }
         } else {
@@ -497,6 +554,8 @@ class App extends Handler
                     writing.last_reply_author_email = user.email;
                     writing.last_reply_author_email_hash = hash_md5(user.email);
                     mongo.march.posts.insert(writing);
+
+                    subscribe(id, context.user);
 
                     Web.redirect("/");
                 }
