@@ -211,7 +211,7 @@ class App extends Handler
         if ("POST" == req.method) {
             var content = req.post.get("content");
             var invalid = false;
-            if (0 >= content.length) {
+            if (null == content || 0 >= content.length) {
                 context.error_content = '必需填写内容。';
                 errors.push({error:context.error_content});
                 invalid = true;
@@ -222,8 +222,24 @@ class App extends Handler
                 context.error_validation = '没有登录';
             }
 
+            var post = mongo.march.posts.findOne({"id": post_id});
+            post.pretty_date = PrettyDate.pretty(post.create_at.getTime());
+            var replies:Dynamic = [];
+            context.post = post;
+
+            for (reply in mongo.march.replies.find({"post_id": post_id})) {
+                reply.pretty_date = PrettyDate.pretty(reply.create_at.getTime());
+                replies.push(reply);
+            }
+
+            context.replies = replies; //CursorHelper.array(replies);
+            context.header.title = '${post.title} - Haxe China';
+            Reflect.setField(context, "moderator?", 
+                user != null && post.author_id == user.id);
+
             if (invalid) {
-                print(render('reply.html', context));
+                Reflect.setField(context, "errors?", errors.length > 0);
+                print(render('view.html', context));
             } else {
                 mongo.march.config.update(
                     {"key": "reply"},{"$inc": {"ids": 1}}, true);
@@ -285,10 +301,7 @@ class App extends Handler
             }
 
             context.replies = replies; //CursorHelper.array(replies);
-
-
             context.header.title = '${post.title} - Haxe China';
-
             Reflect.setField(context, "moderator?", 
                 user != null && post.author_id == user.id);
             print(render("view.html", context));
@@ -439,6 +452,7 @@ class App extends Handler
 
     function markdown(content):String
     {
+        content = StringTools.replace(content, "<script", "&lt;script");
         var h = new haxe.Http("http://md.haxe-china.org/");
         h.setPostData(content);
         var response:String = "";
