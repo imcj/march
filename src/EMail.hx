@@ -7,7 +7,7 @@ typedef Match = {
 
 class EMail
 {
-    static public function fetch(content:String, remove:Bool=false)
+    static public function extract(content:String, remove:Bool=false)
     {
         var regular = ~/([\w0-9\._-]+@[\w0-9.-]+\.\w{2,4})/;
         var matched = { position: 0, length: 0 };

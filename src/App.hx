@@ -544,11 +544,11 @@ class App extends Handler
 
             var hidden_content:String;
             if (hide_email) {
-                var f = EMail.fetch(content, true);
+                var f = EMail.extract(content, true);
                 emails = f.emails;
                 hidden_content = f.content;
             } else {
-                var f = EMail.fetch(content, false);
+                var f = EMail.extract(content, false);
                 emails = f.emails;
                 hidden_content = content;
             }
@@ -813,9 +813,9 @@ class App extends Handler
     {
         var c = "a notifications@haxe-china.org";
         trace(c);
-        var content = EMail.fetch(c, true);
+        var content = EMail.extract(c, true);
         trace(content.content);
-        content = EMail.fetch("hi", true);
+        content = EMail.extract("hi", true);
 
     }
 
