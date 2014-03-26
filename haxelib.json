@@ -9,6 +9,7 @@
     "contributors": ["cj"],
     "dependencies": {
         "mustache": "",
-        "mongodb": ""
+        "mongodb": "",
+        "mtwin": "",
     }
 }

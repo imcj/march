@@ -811,8 +811,12 @@ class App extends Handler
 
     static public function testEmailFetch()
     {
-        var content = EMail.fetch("1\nnotifications@haxe-china.org\n2", true);
+        var c = "a notifications@haxe-china.org";
+        trace(c);
+        var content = EMail.fetch(c, true);
+        trace(content.content);
         content = EMail.fetch("hi", true);
+
     }
 
 	static public function main()
@@ -822,8 +826,8 @@ class App extends Handler
         // testPost();
         // testDefault();
         // testMarkdown();
-        // testEmailFetch();
-        // return;
+        testEmailFetch();
+        return;
 
         var uri = Web.getURI();
 
