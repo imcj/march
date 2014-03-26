@@ -98,6 +98,7 @@ class App extends Handler
 {
     public var req:Request;
     public var mongo:Mongo;
+    public var disable_notify:Bool;
 
     public function new()
     {
@@ -105,6 +106,7 @@ class App extends Handler
         req = new Request();
         mongo = new Mongo();
         req.session = new MongoDBSession(req, mongo.march.sessions);
+        disable_notify = true;
     }
 
     function hash_md5(text:String):String
@@ -153,6 +155,9 @@ class App extends Handler
 
     public function reply_notify(post:Dynamic, reply:Dynamic, user:Dynamic)
     {
+        if (disable_notify)
+            return;
+
         reply.pretty_date = PrettyDate.pretty(reply.create_at.getTime());
         var context = get_context();
         var subscribers = mongo.march.subscribe.find({
@@ -174,6 +179,9 @@ class App extends Handler
     public function invite_notify(emails:Array<String>, user:Dynamic, 
         post:Dynamic)
     {
+        if (disable_notify)
+            return;
+            
         var context = get_context();
         var content = render('email/invite.html', {
             post: post,

@@ -17,7 +17,7 @@ class Handler
 	{
 	}
 
-	function sendNoCacheHeaders() {
+	public function sendNoCacheHeaders() {
 		try {
 			Web.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 			Web.setHeader("Pragma", "no-cache");
