@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+date
+
+haxe -neko worker.n -cp src -lib mustache -main Worker -lib mtwin \
+-lib mockatoo \
+-lib mongodb -lib markdown -lib hxneko-redis \
+-D debug
+
+neko worker.n

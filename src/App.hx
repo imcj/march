@@ -15,6 +15,8 @@ import haxe.web.Dispatch;
 import org.mongodb.Mongo;
 import org.mongodb.Cursor;
 
+import redis.Redis;
+
 using StringTools;
 
 class CursorHelper
@@ -98,7 +100,9 @@ class App extends Handler
 {
     public var req:Request;
     public var mongo:Mongo;
-    public var disable_notify:Bool;
+    public var redis:Redis;
+    public var enableNotify:Bool;
+    public var enableMessageQueue:Bool;
 
     public function new()
     {
@@ -106,7 +110,11 @@ class App extends Handler
         req = new Request();
         mongo = new Mongo();
         req.session = new MongoDBSession(req, mongo.march.sessions);
-        disable_notify = true;
+        enableNotify = false;
+        enableMessageQueue = true;
+
+        if (enableMessageQueue)
+            redis = new Redis();
     }
 
     function hash_md5(text:String):String
@@ -117,6 +125,12 @@ class App extends Handler
     function get_context():Dynamic
     {
         return new GlobalContext(req, mongo);
+    }
+
+    public function push(message:Dynamic):Void
+    {
+        var body = haxe.Json.stringify(message);
+        redis.lpush('message', body);
     }
 
     public function subscribe(post_id, user)
@@ -155,7 +169,7 @@ class App extends Handler
 
     public function reply_notify(post:Dynamic, reply:Dynamic, user:Dynamic)
     {
-        if (disable_notify)
+        if (!enableNotify)
             return;
 
         reply.pretty_date = PrettyDate.pretty(reply.create_at.getTime());
@@ -179,9 +193,9 @@ class App extends Handler
     public function invite_notify(emails:Array<String>, user:Dynamic, 
         post:Dynamic)
     {
-        if (disable_notify)
+        if (!enableNotify)
             return;
-            
+
         var context = get_context();
         var content = render('email/invite.html', {
             post: post,
@@ -561,13 +575,31 @@ class App extends Handler
                 hidden_content = content;
             }
 
-            var encoded = encodeContent(hidden_content);
-
             if (invalid) {
                 Reflect.setField(context, "errors?", errors.length > 0);
                 print(render('post.html', context));
             } else {
+
+                if (enableMessageQueue) {
+                    var body = {
+                        title: title,
+                        content: content,
+                        hide_email: hide_email,
+                        now: Date.now().getTime(),
+                        author: user.id,
+                        draft: draft,
+                        post_id: post_id,
+                    };
+
+                    push({
+                        action: "post",
+                        body: body,
+                    });
+                    Web.redirect("/");
+                    return;
+                }
                 
+                var encoded = encodeContent(hidden_content);
                 var writing:Dynamic =  {
                     "title": title, 
                     "content": content,
@@ -834,8 +866,8 @@ class App extends Handler
         // testPost();
         // testDefault();
         // testMarkdown();
-        testEmailFetch();
-        return;
+        // testEmailFetch();
+        // return;
 
         var uri = Web.getURI();
 
